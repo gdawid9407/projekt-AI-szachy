@@ -15,7 +15,7 @@
 ## 3. Repository Structure and Implementation Status
 - `[x]` `AGENT_INSTRUCTIONS.md` - System instructions and interaction rules for the AI tutor.
 - `[x]` `CONTEXT.md` - Current project state and operational roadmap.
-- `[ ]` `requirements.txt` - Python dependencies (`torch`, `chess`, `numpy`, `tqdm`).
+- `[x]` `requirements.txt` - Python dependencies (`torch`, `chess`, `numpy`, `tqdm`).
 - `[x]` `.gitignore` - Exclusion rules for virtual environments, caches, and external datasets.
 - `[ ]` `src/config.py` - Global paths (`pathlib`), hyperparameters, and automatic device detection (`cuda` -> `mps` -> `cpu`).
 - `[ ]` `src/encoding.py` - Converter from `chess.Board` to a `14x8x8` tensor.

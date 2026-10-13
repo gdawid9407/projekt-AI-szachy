@@ -1,0 +1,16 @@
+# Core Machine Learning Framework
+# On Apple Silicon (macOS M2), standard PyTorch binary includes MPS (Metal Performance Shaders) support.
+# On Windows/Linux with NVIDIA GPUs, install matching CUDA wheels via pip:
+# pip install torch --index-url https://download.pytorch.org/whl/cu121
+torch>=2.2.0
+
+# Chess Domain & Rule Enforcement
+# Handles state management, move generation, and legal move masking
+chess>=1.10.0
+
+# Numerical Computing & Memory Mapping
+# Used for board array manipulations and binary dataset streaming (np.memmap)
+numpy>=1.24.0,<2.0.0
+
+# Utilities & Progress Tracking
+tqdm>=4.66.0
