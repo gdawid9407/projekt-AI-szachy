@@ -13,6 +13,8 @@ def pack() -> None:
     for file_path in sorted(root.rglob('*')):
         if not file_path.is_file():
             continue
+        if file_path.name.startswith("._") or file_path.name == ".DS_Store":
+            continue
         if any(part in EXCLUDE_DIRS for part in file_path.parts):
             continue
         if file_path.suffix.lower() not in VALID_EXTENSIONS:
