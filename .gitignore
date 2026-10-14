@@ -74,3 +74,6 @@ models/*.pth
 runs/
 logs/
 .pytest_cache/
+
+# Generated LLM context dump (output of pack_project.py)
+project_context.txt
