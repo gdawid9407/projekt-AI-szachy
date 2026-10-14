@@ -17,9 +17,9 @@
 - `[x]` `CONTEXT.md` - Current project state and operational roadmap.
 - `[x]` `requirements.txt` - Python dependencies (`torch`, `chess`, `numpy`, `tqdm`).
 - `[x]` `.gitignore` - Exclusion rules for virtual environments, caches, and external datasets.
-- `[x]` `src/config.py` - Global paths (`pathlib`), hyperparameters, and automatic device detection (`cuda` -> `mps` -> `cpu`).
+- `[x]` `src/config.py` - Global paths (`pathlib`), automatic directory creation on SSD, hyperparameters, and device detection (`cuda` -> `mps` -> `cpu`).
 - `[x]` `src/encoding.py` - Converter from `chess.Board` to a `14x8x8` tensor.
-- `[ ]` `src/network.py` - PyTorch neural network definition (`nn.Module`).
+- `[ ]` `src/network.py` - PyTorch neural network definition (`nn.Module`). Scaffolding initialized; `forward()` implementation pending.
 - `[ ]` `src/agent.py` - Move selection logic evaluating legal positions.
 - `[ ]` `play.py` - CLI script to play a test match against the model.
 - `[ ]` `src/train.py` - Training pipeline (supervised learning / self-play).
@@ -31,11 +31,12 @@
 - Memory handling must use chunked reading or memory mapping for large datasets.
 
 ## 5. Current Task
-Implement `src/network.py`:
-1. Design a Value Network using PyTorch `nn.Module`.
-2. Input shape: `(batch_size, 14, 8, 8)`.
-3. Architecture: Convolutional feature extractor (Conv2d, BatchNorm2d, ReLU), Flatten/Global pooling, Fully Connected layers.
-4. Output shape: `(batch_size, 1)` with `Tanh` activation (scalar evaluation in range [-1.0, 1.0]).
+Complete `src/network.py`:
+1. Implement forward pass logic in `ChessValueNetwork.forward`.
+2. Connect feature extraction layers (`conv1` -> `bn1` -> `relu` -> `conv2` -> `bn2` -> `relu` -> `conv3` -> `bn3` -> `relu`).
+3. Flatten 4D tensor `(B, 64, 8, 8)` to 2D tensor `(B, 4096)`.
+4. Apply value head layers (`fc1` -> `relu` -> `fc2` -> `tanh`) producing output shape `(B, 1)`.
+5. Verify output scalar evaluation on Apple Silicon MPS device.
 
 ## 6. Blockers and Open Questions
-- None. Ready for initial environment configuration.
+- None. Scaffolding verified with synthetic batch execution.
