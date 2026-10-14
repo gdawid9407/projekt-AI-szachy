@@ -7,6 +7,11 @@ DATA_DIR: Path = BASE_DIR / "data"
 MODELS_DIR: Path = BASE_DIR / "models"
 CHECKPOINTS_DIR: Path = BASE_DIR / "checkpoints"
 
+# Ensure storage directories exist on the external drive
+for directory in (DATA_DIR, MODELS_DIR, CHECKPOINTS_DIR):
+    directory.mkdir(parents=True, exist_ok=True)
+
+
 # Board representation dimensions
 # 14 channels x 8 ranks x 8 files:
 # 6 channels for White pieces (P, N, B, R, Q, K)
