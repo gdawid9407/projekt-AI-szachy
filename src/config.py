@@ -24,7 +24,6 @@ def get_device() -> torch.device:
     """
     if torch.cuda.is_available():
         return torch.device("cuda")
-    # TODO: Implement Apple Silicon Metal Performance Shaders (MPS) check here.
-    # Check if PyTorch MPS backend is available. If so, return torch.device("mps").
-    
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
     return torch.device("cpu")

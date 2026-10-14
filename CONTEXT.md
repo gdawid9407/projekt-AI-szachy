@@ -17,8 +17,8 @@
 - `[x]` `CONTEXT.md` - Current project state and operational roadmap.
 - `[x]` `requirements.txt` - Python dependencies (`torch`, `chess`, `numpy`, `tqdm`).
 - `[x]` `.gitignore` - Exclusion rules for virtual environments, caches, and external datasets.
-- `[ ]` `src/config.py` - Global paths (`pathlib`), hyperparameters, and automatic device detection (`cuda` -> `mps` -> `cpu`).
-- `[ ]` `src/encoding.py` - Converter from `chess.Board` to a `14x8x8` tensor.
+- `[x]` `src/config.py` - Global paths (`pathlib`), hyperparameters, and automatic device detection (`cuda` -> `mps` -> `cpu`).
+- `[x]` `src/encoding.py` - Converter from `chess.Board` to a `14x8x8` tensor.
 - `[ ]` `src/network.py` - PyTorch neural network definition (`nn.Module`).
 - `[ ]` `src/agent.py` - Move selection logic evaluating legal positions.
 - `[ ]` `play.py` - CLI script to play a test match against the model.
@@ -31,10 +31,11 @@
 - Memory handling must use chunked reading or memory mapping for large datasets.
 
 ## 5. Current Task
-Initialize the project environment:
-1. Create `requirements.txt` with proper PyTorch setup for macOS M2 and Windows.
-2. Create `.gitignore` to protect against committing heavy files.
-3. Implement `src/config.py` with automatic hardware detection (`mps`/`cuda`/`cpu`) and base paths.
+Implement `src/network.py`:
+1. Design a Value Network using PyTorch `nn.Module`.
+2. Input shape: `(batch_size, 14, 8, 8)`.
+3. Architecture: Convolutional feature extractor (Conv2d, BatchNorm2d, ReLU), Flatten/Global pooling, Fully Connected layers.
+4. Output shape: `(batch_size, 1)` with `Tanh` activation (scalar evaluation in range [-1.0, 1.0]).
 
 ## 6. Blockers and Open Questions
 - None. Ready for initial environment configuration.
