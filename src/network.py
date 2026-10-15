@@ -48,14 +48,19 @@ class ChessValueNetwork(nn.Module):
         Returns:
             torch.Tensor: Scalar value evaluation of shape (B, 1).
         """
-        # Shape check: (B, 14, 8, 8)
-        # TODO: Implement the forward computation flow:
-        # 1. Apply conv1 -> bn1 -> relu
-        # 2. Apply conv2 -> bn2 -> relu
-        # 3. Apply conv3 -> bn3 -> relu
-        # 4. Flatten spatial dimensions: (B, num_filters, 8, 8) -> (B, num_filters * 64)
-        # 5. Apply fc1 -> relu -> fc2 -> tanh
-        raise NotImplementedError("Complete the forward pass implementation.")
+        # Feature extraction: (B, 14, 8, 8) -> (B, 64, 8, 8)
+        x = self.relu(self.bn1(self.conv1(x)))
+        x = self.relu(self.bn2(self.conv2(x)))
+        x = self.relu(self.bn3(self.conv3(x)))
+
+        # Flatten spatial dimensions preserving batch dimension: (B, 64, 8, 8) -> (B, 4096)
+        x = torch.flatten(x, start_dim=1)
+
+        # Value evaluation head: (B, 4096) -> (B, 128) -> (B, 1)
+        x = self.relu(self.fc1(x))
+        x = self.tanh(self.fc2(x))
+
+        return x
 
 
 if __name__ == "__main__":

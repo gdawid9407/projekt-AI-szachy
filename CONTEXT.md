@@ -19,7 +19,7 @@
 - `[x]` `.gitignore` - Exclusion rules for virtual environments, caches, and external datasets.
 - `[x]` `src/config.py` - Global paths (`pathlib`), automatic directory creation on SSD, hyperparameters, and device detection (`cuda` -> `mps` -> `cpu`).
 - `[x]` `src/encoding.py` - Converter from `chess.Board` to a `14x8x8` tensor.
-- `[ ]` `src/network.py` - PyTorch neural network definition (`nn.Module`). Scaffolding initialized; `forward()` implementation pending.
+- `[x]` `src/network.py` - PyTorch neural network definition (`nn.Module`). Forward pass implemented and verified on MPS.
 - `[ ]` `src/agent.py` - Move selection logic evaluating legal positions.
 - `[ ]` `play.py` - CLI script to play a test match against the model.
 - `[ ]` `src/train.py` - Training pipeline (supervised learning / self-play).
@@ -31,12 +31,13 @@
 - Memory handling must use chunked reading or memory mapping for large datasets.
 
 ## 5. Current Task
-Complete `src/network.py`:
-1. Implement forward pass logic in `ChessValueNetwork.forward`.
-2. Connect feature extraction layers (`conv1` -> `bn1` -> `relu` -> `conv2` -> `bn2` -> `relu` -> `conv3` -> `bn3` -> `relu`).
-3. Flatten 4D tensor `(B, 64, 8, 8)` to 2D tensor `(B, 4096)`.
-4. Apply value head layers (`fc1` -> `relu` -> `fc2` -> `tanh`) producing output shape `(B, 1)`.
-5. Verify output scalar evaluation on Apple Silicon MPS device.
+Implement `src/agent.py`:
+1. Define `select_move(board: chess.Board, model: nn.Module, device: torch.device) -> chess.Move`.
+2. Generate all legal candidate moves via `board.legal_moves`.
+3. Construct child board states by applying each candidate move (`push`/`pop`).
+4. Vectorize candidate positions into a single batch tensor `(N, 14, 8, 8)` using `encode_board`.
+5. Execute inference in `torch.no_grad()` / `model.eval()`.
+6. Select the optimal move according to active color perspective (maximize for White, minimize for Black).
 
 ## 6. Blockers and Open Questions
-- None. Scaffolding verified with synthetic batch execution.
+- None. Model forward pass validated on Apple Silicon MPS.
