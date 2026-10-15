@@ -66,13 +66,12 @@ def select_best_move(
     if not legal_moves:
         return None
 
-    # TODO: Implement move selection logic based on board.turn:
-    # 1. If White is moving (board.turn == chess.WHITE):
-    #    Select the move that maximizes the evaluation score.
-    # 2. If Black is moving (board.turn == chess.BLACK):
-    #    Select the move that minimizes the evaluation score.
-    # 3. Return the chosen chess.Move instance.
-    raise NotImplementedError("Complete select_best_move implementation.")
+    if board.turn == chess.WHITE:
+        best_idx = int(torch.argmax(evaluations).item())
+    else:
+        best_idx = int(torch.argmin(evaluations).item())
+
+    return legal_moves[best_idx]
 
 
 if __name__ == "__main__":

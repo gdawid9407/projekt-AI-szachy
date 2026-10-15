@@ -20,9 +20,10 @@
 - `[x]` `src/config.py` - Global paths (`pathlib`), automatic directory creation on SSD, hyperparameters, and device detection (`cuda` -> `mps` -> `cpu`).
 - `[x]` `src/encoding.py` - Converter from `chess.Board` to a `14x8x8` tensor.
 - `[x]` `src/network.py` - PyTorch neural network definition (`nn.Module`). Forward pass implemented and verified on MPS.
-- `[ ]` `src/agent.py` - Move selection logic evaluating legal positions.
-- `[ ]` `play.py` - CLI script to play a test match against the model.
-- `[ ]` `src/train.py` - Training pipeline (supervised learning / self-play).
+- `[x]` `src/agent.py` - Move selection logic evaluating legal positions with batch inference.
+- `[x]` `play.py` - CLI script to play a test match against the model.
+- `[ ]` `src/dataset.py` - PGN parser and memory-mapped binary dataset generator.
+- `[ ]` `src/train.py` - Supervised training pipeline (MSE / cross-entropy loss, optimizer, validation loop).
 
 ## 4. Technical Constraints and Rules
 - Code must use `pathlib.Path` for all paths (cross-platform compatibility).
@@ -31,13 +32,11 @@
 - Memory handling must use chunked reading or memory mapping for large datasets.
 
 ## 5. Current Task
-Implement `src/agent.py`:
-1. Define `select_move(board: chess.Board, model: nn.Module, device: torch.device) -> chess.Move`.
-2. Generate all legal candidate moves via `board.legal_moves`.
-3. Construct child board states by applying each candidate move (`push`/`pop`).
-4. Vectorize candidate positions into a single batch tensor `(N, 14, 8, 8)` using `encode_board`.
-5. Execute inference in `torch.no_grad()` / `model.eval()`.
-6. Select the optimal move according to active color perspective (maximize for White, minimize for Black).
+Design and implement the training data pipeline:
+1. `src/dataset.py`: Stream PGN game data without loading entire files into memory.
+2. Extract board positions and game outcomes (+1.0 for White win, 0.0 for draw, -1.0 for Black win).
+3. Serialize positions into memory-mapped arrays (`np.memmap`) on external storage.
+4. Implement PyTorch `Dataset` / `DataLoader` for batch training.
 
 ## 6. Blockers and Open Questions
-- None. Model forward pass validated on Apple Silicon MPS.
+- Need user input on dataset source: specify path to existing PGN dataset or download a standard subset (e.g., Lichess elite games / CC-RL).
