@@ -24,7 +24,8 @@
 - `[x]` `play.py` - CLI script to play a test match against the model.
 - `[x]` `src/download_data.py` - Downloader and stream decompressor for PGN Mentor, FICS (.bz2), and Lichess (.zst).
 - `[x]` `src/dataset.py` - Streaming multi-PGN parser, optional Elo filtering, and memory-mapped PyTorch Dataset (`np.memmap`).
-- `[ ]` `src/train.py` - Supervised training pipeline (MSE loss, AdamW, validation split, model checkpointing).
+- `[x]` `src/train.py` - Supervised training pipeline (MSE loss, AdamW, validation split, model checkpointing).
+- `[ ]` `src/search.py` - Minimax search with Alpha-Beta pruning (depth 2-4) to replace 1-ply greedy evaluation.
 
 ## 4. Technical Constraints and Rules
 - Code must use `pathlib.Path` for all paths (cross-platform compatibility).
@@ -33,12 +34,11 @@
 - Memory handling must use chunked reading or memory mapping for large datasets.
 
 ## 5. Current Task
-Implement `src/train.py`:
-1. Partition `ChessMemmapDataset` into train/validation splits (e.g. 90% / 10%).
-2. Initialize PyTorch `DataLoader` with batching and shuffling.
-3. Configure Mean Squared Error (`nn.MSELoss`) regression loss against game outcomes $\in [-1.0, 1.0]$.
-4. Implement optimization loop with `torch.optim.AdamW`, gradient clipping, and metric logging.
-5. Save model weights checkpoint to `models/chess_value_net.pt` when validation loss improves.
+Design and implement `src/search.py` (Alpha-Beta Search Engine):
+1. Overcome the 1-ply horizon effect by evaluating move trees to depth $d \ge 2$.
+2. Implement recursive Minimax with $\alpha$-$\beta$ branch pruning to cut unpromising subtree evaluations.
+3. Integrate batch leaf evaluation caching or transposition table (`chess.polyglot` Zobrist hashing).
+4. Update `src/agent.py` and `play.py` to support configurable search depth (`--depth`).
 
 ## 6. Blockers and Open Questions
-- None. Memory-mapped dataset pipeline tested and operational on external drive.
+- None. Model training pipeline verified; weights saved to `models/chess_value_net.pt`.
