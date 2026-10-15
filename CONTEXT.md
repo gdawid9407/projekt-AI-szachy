@@ -22,8 +22,9 @@
 - `[x]` `src/network.py` - PyTorch neural network definition (`nn.Module`). Forward pass implemented and verified on MPS.
 - `[x]` `src/agent.py` - Move selection logic evaluating legal positions with batch inference.
 - `[x]` `play.py` - CLI script to play a test match against the model.
-- `[ ]` `src/dataset.py` - PGN parser and memory-mapped binary dataset generator.
-- `[ ]` `src/train.py` - Supervised training pipeline (MSE / cross-entropy loss, optimizer, validation loop).
+- `[x]` `src/download_data.py` - Downloader and stream decompressor for PGN Mentor, FICS (.bz2), and Lichess (.zst).
+- `[x]` `src/dataset.py` - Streaming multi-PGN parser, optional Elo filtering, and memory-mapped PyTorch Dataset (`np.memmap`).
+- `[ ]` `src/train.py` - Supervised training pipeline (MSE loss, AdamW, validation split, model checkpointing).
 
 ## 4. Technical Constraints and Rules
 - Code must use `pathlib.Path` for all paths (cross-platform compatibility).
@@ -32,11 +33,12 @@
 - Memory handling must use chunked reading or memory mapping for large datasets.
 
 ## 5. Current Task
-Design and implement the training data pipeline:
-1. `src/dataset.py`: Stream PGN game data without loading entire files into memory.
-2. Extract board positions and game outcomes (+1.0 for White win, 0.0 for draw, -1.0 for Black win).
-3. Serialize positions into memory-mapped arrays (`np.memmap`) on external storage.
-4. Implement PyTorch `Dataset` / `DataLoader` for batch training.
+Implement `src/train.py`:
+1. Partition `ChessMemmapDataset` into train/validation splits (e.g. 90% / 10%).
+2. Initialize PyTorch `DataLoader` with batching and shuffling.
+3. Configure Mean Squared Error (`nn.MSELoss`) regression loss against game outcomes $\in [-1.0, 1.0]$.
+4. Implement optimization loop with `torch.optim.AdamW`, gradient clipping, and metric logging.
+5. Save model weights checkpoint to `models/chess_value_net.pt` when validation loss improves.
 
 ## 6. Blockers and Open Questions
-- Need user input on dataset source: specify path to existing PGN dataset or download a standard subset (e.g., Lichess elite games / CC-RL).
+- None. Memory-mapped dataset pipeline tested and operational on external drive.

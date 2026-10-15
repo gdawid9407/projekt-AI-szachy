@@ -14,3 +14,7 @@ numpy>=1.24.0,<2.0.0
 
 # Utilities & Progress Tracking
 tqdm>=4.66.0
+
+# Compression & Dataset Streaming
+# Used for streaming decompressing Lichess .pgn.zst archives
+zstandard>=0.22.0
