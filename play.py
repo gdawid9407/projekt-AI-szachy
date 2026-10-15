@@ -44,13 +44,53 @@ def parse_player_move(board: chess.Board, move_text: str) -> Optional[chess.Move
     return None
 
 
+UNICODE_PIECES = {
+    chess.PAWN: ("♙", "♟"),
+    chess.KNIGHT: ("♘", "♞"),
+    chess.BISHOP: ("♗", "♝"),
+    chess.ROOK: ("♖", "♜"),
+    chess.QUEEN: ("♕", "♛"),
+    chess.KING: ("♔", "♚"),
+}
+
+
 def render_board(board: chess.Board, player_is_black: bool = False) -> str:
     """
-    Renders terminal-friendly ASCII representation of the chess board.
-    Flipped if the human plays as Black.
+    Renders an enhanced Unicode box-drawing chessboard with ranks, files,
+    piece glyphs, and alternating dark/light square patterns.
     """
-    board_str = str(board if not player_is_black else board.transform(chess.flip_vertical))
-    return board_str
+    ranks = range(8) if player_is_black else range(7, -1, -1)
+    files = range(7, -1, -1) if player_is_black else range(8)
+
+    file_letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
+    file_labels = "    " + "   ".join(file_letters[f] for f in files)
+    top_border = "  ┌" + "───┬" * 7 + "───┐"
+    mid_border = "  ├" + "───┼" * 7 + "───┤"
+    bot_border = "  └" + "───┴" * 7 + "───┘"
+
+    last_rank_index = 0 if not player_is_black else 7
+    lines = [file_labels, top_border]
+
+    for rank in ranks:
+        row_str = f"{rank + 1} │"
+        for file in files:
+            sq = chess.square(file, rank)
+            piece = board.piece_at(sq)
+            if piece is None:
+                symbol = "·" if (rank + file) % 2 == 1 else " "
+            else:
+                symbols = UNICODE_PIECES[piece.piece_type]
+                symbol = symbols[0] if piece.color == chess.WHITE else symbols[1]
+            row_str += f" {symbol} │"
+
+        row_str += f" {rank + 1}"
+        lines.append(row_str)
+        if rank != last_rank_index:
+            lines.append(mid_border)
+
+    lines.append(bot_border)
+    lines.append(file_labels)
+    return "\n".join(lines)
 
 
 def play_interactive_game(
@@ -77,16 +117,34 @@ def play_interactive_game(
     model.eval()
     board = chess.Board()
 
-    print("\n--- Chess AI Match Started ---")
-    print(f"Human: {'White' if human_color == chess.WHITE else 'Black'}")
-    print(f"AI:    {'Black' if human_color == chess.WHITE else 'White'}")
-    print("Input formats: UCI (e.g., 'e2e4') or SAN (e.g., 'e4', 'Nf3'). Type 'quit' to exit.\n")
+    white_symbols = "♔ ♕ ♖ ♗ ♘ ♙"
+    black_symbols = "♚ ♛ ♜ ♝ ♞ ♟"
+
+    human_is_white = (human_color == chess.WHITE)
+    human_pieces = white_symbols if human_is_white else black_symbols
+    ai_pieces = black_symbols if human_is_white else white_symbols
+    human_side = "White" if human_is_white else "Black"
+    ai_side = "Black" if human_is_white else "White"
+
+    print("\n" + "=" * 48)
+    print("             CHESS AI MATCH STARTED             ")
+    print("=" * 48)
+    print(f" Player : {human_side:<5} [ {human_pieces} ] (Bottom)")
+    print(f" AI     : {ai_side:<5} [ {ai_pieces} ] (Top)")
+    print("-" * 48)
+    print(" Move notation: UCI ('e2e4') or SAN ('e4', 'Nf3')")
+    print(" Commands     : type 'quit' or 'exit' to quit")
+    print("=" * 48 + "\n")
 
     while not board.is_game_over():
-        print("-" * 30)
-        print(f"Turn: {'White' if board.turn == chess.WHITE else 'Black'} (Move {board.fullmove_number})")
+        current_actor = "Player" if board.turn == human_color else "AI"
+        turn_color = "White" if board.turn == chess.WHITE else "Black"
+        active_symbols = white_symbols if board.turn == chess.WHITE else black_symbols
+
+        print("-" * 40)
+        print(f" Move {board.fullmove_number} | Turn: {turn_color} ({current_actor}) [ {active_symbols} ]")
         print(render_board(board, player_is_black=(human_color == chess.BLACK)))
-        print("-" * 30)
+        print("-" * 40)
 
         if board.turn == human_color:
             # Human turn
