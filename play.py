@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+import time
 from typing import Optional
 import chess
 import torch
@@ -187,14 +188,98 @@ def play_interactive_game(
         print(f"Result: Game drawn ({board.result()}).")
 
 
+def play_ai_vs_ai_game(
+    weights_path: Optional[Path] = None,
+    delay: float = 0.5,
+    max_moves: int = 150,
+) -> None:
+    """
+    Executes an autonomous exhibition game between two instances of the AI agent
+    without modifying model parameters (inference-only).
+    """
+    device = get_device()
+    model = ChessValueNetwork().to(device)
+
+    if weights_path is not None and weights_path.is_file():
+        state_dict = torch.load(weights_path, map_location=device)
+        model.load_state_dict(state_dict)
+        print(f"Loaded model weights from {weights_path}")
+    else:
+        print("Using model with initial random weights (untrained).")
+
+    # Strict inference mode: parameters are frozen and no gradients are accumulated
+    model.eval()
+    board = chess.Board()
+
+    white_symbols = "♔ ♕ ♖ ♗ ♘ ♙"
+    black_symbols = "♚ ♛ ♜ ♝ ♞ ♟"
+
+    print("\n" + "=" * 48)
+    print("             AI vs AI EXHIBITION MATCH          ")
+    print("=" * 48)
+    print(f" White AI : [ {white_symbols} ] (Bottom)")
+    print(f" Black AI : [ {black_symbols} ] (Top)")
+    print(f" Mode     : Autonomous evaluation (Delay: {delay}s/move)")
+    print("=" * 48 + "\n")
+
+    while not board.is_game_over() and board.fullmove_number <= max_moves:
+        turn_color = "White" if board.turn == chess.WHITE else "Black"
+        active_symbols = white_symbols if board.turn == chess.WHITE else black_symbols
+
+        print("-" * 40)
+        print(f" Move {board.fullmove_number} | Turn: {turn_color} (AI) [ {active_symbols} ]")
+        print(render_board(board, player_is_black=False))
+        print("-" * 40)
+
+        ai_move = select_best_move(board, model, device)
+        if ai_move is None:
+            break
+
+        san_repr = board.san(ai_move)
+        board.push(ai_move)
+        print(f"AI ({turn_color}) played: {san_repr} ({ai_move.uci()})")
+
+        if delay > 0:
+            time.sleep(delay)
+
+    # Final outcome
+    print("\n" + "=" * 30)
+    print("GAME OVER")
+    print(render_board(board, player_is_black=False))
+    print("=" * 30)
+
+    if board.is_checkmate():
+        winner = "Black" if board.turn == chess.WHITE else "White"
+        print(f"Result: Checkmate. {winner} wins ({board.result()}).")
+    elif board.is_stalemate():
+        print(f"Result: Stalemate. Draw ({board.result()}).")
+    elif board.is_insufficient_material():
+        print(f"Result: Draw by insufficient material ({board.result()}).")
+    elif board.can_claim_threefold_repetition():
+        print("Result: Draw by threefold repetition.")
+    elif board.can_claim_fifty_moves():
+        print("Result: Draw by 50-move rule.")
+    elif board.fullmove_number > max_moves:
+        print(f"Result: Terminated after reaching move limit ({max_moves} moves).")
+    else:
+        print(f"Result: Game drawn ({board.result()}).")
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Play chess against the AI engine.")
+    parser = argparse.ArgumentParser(description="Play chess against or watch the AI engine.")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["human-vs-ai", "ai-vs-ai"],
+        default="human-vs-ai",
+        help="Match mode: 'human-vs-ai' (default) or 'ai-vs-ai'",
+    )
     parser.add_argument(
         "--color",
         type=str,
         choices=["white", "black"],
         default="white",
-        help="Player color choice (default: white)",
+        help="Player color choice in human-vs-ai mode (default: white)",
     )
     parser.add_argument(
         "--weights",
@@ -202,8 +287,23 @@ if __name__ == "__main__":
         default=None,
         help="Path to trained PyTorch weights file (.pt)",
     )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=0.4,
+        help="Delay in seconds between moves in ai-vs-ai mode (default: 0.4s)",
+    )
+    parser.add_argument(
+        "--max-moves",
+        type=int,
+        default=120,
+        help="Maximum fullmoves before concluding ai-vs-ai match (default: 120)",
+    )
 
     args = parser.parse_args()
-    selected_color = chess.WHITE if args.color.lower() == "white" else chess.BLACK
 
-    play_interactive_game(selected_color, weights_path=args.weights)
+    if args.mode == "ai-vs-ai":
+        play_ai_vs_ai_game(weights_path=args.weights, delay=args.delay, max_moves=args.max_moves)
+    else:
+        selected_color = chess.WHITE if args.color.lower() == "white" else chess.BLACK
+        play_interactive_game(selected_color, weights_path=args.weights)
