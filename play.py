@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+import sys
 import time
 from typing import Optional
 import chess
@@ -57,23 +58,23 @@ UNICODE_PIECES = {
 
 def render_board(board: chess.Board, player_is_black: bool = False) -> str:
     """
-    Renders an enhanced Unicode box-drawing chessboard with ranks, files,
+    Renders an enlarged, high-visibility Unicode box-drawing chessboard with ranks, files,
     piece glyphs, and alternating dark/light square patterns.
     """
     ranks = range(8) if player_is_black else range(7, -1, -1)
     files = range(7, -1, -1) if player_is_black else range(8)
 
     file_letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
-    file_labels = "    " + "   ".join(file_letters[f] for f in files)
-    top_border = "  ┌" + "───┬" * 7 + "───┐"
-    mid_border = "  ├" + "───┼" * 7 + "───┤"
-    bot_border = "  └" + "───┴" * 7 + "───┘"
+    file_labels = "      " + "     ".join(file_letters[f] for f in files)
+    top_border = "   ┌" + "─────┬" * 7 + "─────┐"
+    mid_border = "   ├" + "─────┼" * 7 + "─────┤"
+    bot_border = "   └" + "─────┴" * 7 + "─────┘"
 
     last_rank_index = 0 if not player_is_black else 7
     lines = [file_labels, top_border]
 
     for rank in ranks:
-        row_str = f"{rank + 1} │"
+        row_str = f" {rank + 1} │"
         for file in files:
             sq = chess.square(file, rank)
             piece = board.piece_at(sq)
@@ -82,7 +83,7 @@ def render_board(board: chess.Board, player_is_black: bool = False) -> str:
             else:
                 symbols = UNICODE_PIECES[piece.piece_type]
                 symbol = symbols[0] if piece.color == chess.WHITE else symbols[1]
-            row_str += f" {symbol} │"
+            row_str += f"  {symbol}  │"
 
         row_str += f" {rank + 1}"
         lines.append(row_str)
@@ -265,45 +266,181 @@ def play_ai_vs_ai_game(
         print(f"Result: Game drawn ({board.result()}).")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Play chess against or watch the AI engine.")
-    parser.add_argument(
-        "--mode",
-        type=str,
-        choices=["human-vs-ai", "ai-vs-ai"],
-        default="human-vs-ai",
-        help="Match mode: 'human-vs-ai' (default) or 'ai-vs-ai'",
-    )
-    parser.add_argument(
-        "--color",
-        type=str,
-        choices=["white", "black"],
-        default="white",
-        help="Player color choice in human-vs-ai mode (default: white)",
-    )
-    parser.add_argument(
-        "--weights",
-        type=Path,
-        default=None,
-        help="Path to trained PyTorch weights file (.pt)",
-    )
-    parser.add_argument(
-        "--delay",
-        type=float,
-        default=0.4,
-        help="Delay in seconds between moves in ai-vs-ai mode (default: 0.4s)",
-    )
-    parser.add_argument(
-        "--max-moves",
-        type=int,
-        default=120,
-        help="Maximum fullmoves before concluding ai-vs-ai match (default: 120)",
-    )
+def play_human_vs_human_game() -> None:
+    """
+    Executes a local 2-player game loop between two humans sharing the terminal.
+    """
+    board = chess.Board()
 
-    args = parser.parse_args()
+    white_symbols = "♔ ♕ ♖ ♗ ♘ ♙"
+    black_symbols = "♚ ♛ ♜ ♝ ♞ ♟"
 
-    if args.mode == "ai-vs-ai":
-        play_ai_vs_ai_game(weights_path=args.weights, delay=args.delay, max_moves=args.max_moves)
+    print("\n" + "=" * 48)
+    print("         HUMAN vs HUMAN LOCAL MATCH             ")
+    print("=" * 48)
+    print(f" Player 1 (White) : [ {white_symbols} ] (Bottom)")
+    print(f" Player 2 (Black) : [ {black_symbols} ] (Top)")
+    print("-" * 48)
+    print(" Move notation: UCI ('e2e4') or SAN ('e4', 'Nf3')")
+    print(" Commands     : type 'quit' or 'exit' to quit")
+    print("=" * 48 + "\n")
+
+    while not board.is_game_over():
+        turn_color = "White" if board.turn == chess.WHITE else "Black"
+        active_symbols = white_symbols if board.turn == chess.WHITE else black_symbols
+        player_name = "Player 1 (White)" if board.turn == chess.WHITE else "Player 2 (Black)"
+
+        print("-" * 48)
+        print(f" Move {board.fullmove_number} | Turn: {player_name} [ {active_symbols} ]")
+        print(render_board(board, player_is_black=False))
+        print("-" * 48)
+
+        while True:
+            user_input = input(f"[{turn_color} Move]: ").strip()
+            if user_input.lower() in ("quit", "exit"):
+                print("Match terminated by user.")
+                return
+
+            move = parse_player_move(board, user_input)
+            if move is not None:
+                board.push(move)
+                break
+            else:
+                print(f"Invalid or illegal move: '{user_input}'. Legal moves: {[board.san(m) for m in board.legal_moves]}")
+
+    print("\n" + "=" * 30)
+    print("GAME OVER")
+    print(render_board(board, player_is_black=False))
+    print("=" * 30)
+
+    if board.is_checkmate():
+        winner = "Black" if board.turn == chess.WHITE else "White"
+        print(f"Result: Checkmate. {winner} wins ({board.result()}).")
+    elif board.is_stalemate():
+        print(f"Result: Stalemate. Draw ({board.result()}).")
+    elif board.is_insufficient_material():
+        print(f"Result: Draw by insufficient material ({board.result()}).")
+    elif board.can_claim_threefold_repetition():
+        print("Result: Draw by threefold repetition.")
+    elif board.can_claim_fifty_moves():
+        print("Result: Draw by 50-move rule.")
     else:
-        selected_color = chess.WHITE if args.color.lower() == "white" else chess.BLACK
-        play_interactive_game(selected_color, weights_path=args.weights)
+        print(f"Result: Game drawn ({board.result()}).")
+
+
+def interactive_startup_menu() -> None:
+    """
+    Interactive terminal menu to select match mode, player color, and model weights.
+    """
+    print("\n" + "=" * 48)
+    print("                 CHESS AI ENGINE                ")
+    print("=" * 48)
+    print(" Select Game Mode:")
+    print("   [1] Human vs AI")
+    print("   [2] AI vs AI (Autonomous Exhibition)")
+    print("   [3] Human vs Human (Local 2-Player)")
+    print("-" * 48)
+
+    while True:
+        mode_choice = input(" Choose mode [1-3] (default: 1): ").strip() or "1"
+        if mode_choice in ("1", "2", "3"):
+            break
+        print(" Invalid choice. Please enter 1, 2, or 3.")
+
+    default_weights = MODELS_DIR / "chess_value_net.pt"
+    has_weights = default_weights.is_file()
+
+    if mode_choice == "1":
+        # Human vs AI
+        print("\n Choose your side:")
+        print("   [1] White (plays first, bottom)")
+        print("   [2] Black (plays second, bottom)")
+        while True:
+            color_choice = input(" Choose side [1-2] (default: 1): ").strip() or "1"
+            if color_choice in ("1", "2"):
+                break
+            print(" Invalid choice. Enter 1 or 2.")
+        color = chess.WHITE if color_choice == "1" else chess.BLACK
+
+        weights_path = None
+        if has_weights:
+            print("\n AI Model Weights:")
+            print(f"   [1] Trained model ({default_weights.name})")
+            print("   [2] Untrained random model")
+            w_choice = input(" Choose model [1-2] (default: 1): ").strip() or "1"
+            if w_choice == "1":
+                weights_path = default_weights
+
+        play_interactive_game(color, weights_path=weights_path)
+
+    elif mode_choice == "2":
+        # AI vs AI
+        weights_path = None
+        if has_weights:
+            print("\n AI Model Weights:")
+            print(f"   [1] Trained model ({default_weights.name})")
+            print("   [2] Untrained random model")
+            w_choice = input(" Choose model [1-2] (default: 1): ").strip() or "1"
+            if w_choice == "1":
+                weights_path = default_weights
+
+        delay_input = input(" Move delay in seconds (default: 0.4s): ").strip() or "0.4"
+        try:
+            delay = max(0.0, float(delay_input))
+        except ValueError:
+            delay = 0.4
+
+        play_ai_vs_ai_game(weights_path=weights_path, delay=delay)
+
+    elif mode_choice == "3":
+        # Human vs Human
+        play_human_vs_human_game()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        interactive_startup_menu()
+    else:
+        parser = argparse.ArgumentParser(description="Play chess against or watch the AI engine.")
+        parser.add_argument(
+            "--mode",
+            type=str,
+            choices=["human-vs-ai", "ai-vs-ai", "human-vs-human"],
+            default="human-vs-ai",
+            help="Match mode: 'human-vs-ai' (default), 'ai-vs-ai', or 'human-vs-human'",
+        )
+        parser.add_argument(
+            "--color",
+            type=str,
+            choices=["white", "black"],
+            default="white",
+            help="Player color choice in human-vs-ai mode (default: white)",
+        )
+        parser.add_argument(
+            "--weights",
+            type=Path,
+            default=None,
+            help="Path to trained PyTorch weights file (.pt)",
+        )
+        parser.add_argument(
+            "--delay",
+            type=float,
+            default=0.4,
+            help="Delay in seconds between moves in ai-vs-ai mode (default: 0.4s)",
+        )
+        parser.add_argument(
+            "--max-moves",
+            type=int,
+            default=120,
+            help="Maximum fullmoves before concluding ai-vs-ai match (default: 120)",
+        )
+
+        args = parser.parse_args()
+
+        if args.mode == "ai-vs-ai":
+            play_ai_vs_ai_game(weights_path=args.weights, delay=args.delay, max_moves=args.max_moves)
+        elif args.mode == "human-vs-human":
+            play_human_vs_human_game()
+        else:
+            selected_color = chess.WHITE if args.color.lower() == "white" else chess.BLACK
+            play_interactive_game(selected_color, weights_path=args.weights)
